@@ -120,6 +120,7 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         # TODO: Handle TrajFlags for special rows.
         # Perhaps better to do linear search instead of current interpolate_trajectory_at_x
         #   binary search if we're looking for anything other than TrajFlag.RANGE or .NONE
+        # TODO: When returning data for charting we don't really need to interpolate
         ranges: List[TrajectoryData] = []
         start = 0
         if filter_flags == TrajFlag.NONE: start = maximum_range
