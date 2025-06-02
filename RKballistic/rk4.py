@@ -5,19 +5,19 @@ import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
-from typing_extensions import Union, List, Tuple
-import time
-
-from py_ballisticcalc.logger import logger
 from py_ballisticcalc.conditions import Shot, Wind
 from py_ballisticcalc.exceptions import RangeError
 from py_ballisticcalc.interface import Calculator
 from py_ballisticcalc.interface_config import create_interface_config
-from py_ballisticcalc.trajectory_calc._trajectory_calc import (TrajectoryCalc,
-                                                               calculate_energy, calculate_ogw,
-                                                               get_correction)
+from py_ballisticcalc.logger import logger
+from py_ballisticcalc.trajectory_calc import (TrajectoryCalc,
+                                              calculate_energy, calculate_ogw,
+                                              get_correction)
 from py_ballisticcalc.trajectory_data import TrajectoryData, HitResult, TrajFlag
 from py_ballisticcalc.unit import Angular, Distance, Energy, Velocity, Weight, PreferredUnits
+from typing_extensions import Union, List, Tuple, TypeAlias
+from numpy.typing import NDArray
+
 
 __all__ = (
     'RK4Calculator',
@@ -26,8 +26,6 @@ __all__ = (
     'cTimeDelta',
 )
 
-from typing import TypeAlias
-from numpy.typing import NDArray
 
 Vector3D: TypeAlias = NDArray[np.float64]
 trajectory_dtype = np.dtype([

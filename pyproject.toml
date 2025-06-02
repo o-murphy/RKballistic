@@ -33,6 +33,9 @@ classifiers = [
 ]
 dependencies = ["typing_extensions>= 4.12.2", "tomli; python_version<'3.11'", "py_ballisticcalc~=2.1.0b6"]
 
+[project.entry-points.py_ballisticcalc]
+engine = "RKballistic.rk4:RK4TrajectoryCalc"
+
 [project.urls]
 "Homepage" = "https://github.com/dbookstaber/RKballistic"
 "Bug Reports" = "https://github.com/dbookstaber/RKballistic"
