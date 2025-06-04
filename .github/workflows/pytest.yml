@@ -49,11 +49,11 @@ jobs:
       - name: Run py-ballisticcalc tests with --engine RKballistic
         run: |
           cd py-ballisticcalc
-          pytest tests -v --engine RKballistic
+          pytest ./tests -v --engine RKballistic
           cd ../
         shell: bash
 
       - name: Run RKballistic specific tests
         run: |
-          pytest -v
+          pytest ./tests -v
         shell: bash
