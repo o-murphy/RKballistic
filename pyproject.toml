@@ -54,6 +54,11 @@ where = ["."]
 include = ["RKballistic*"]
 exclude = ["tests*"]
 
+[tool.pytest.ini]
+minversion = "8.0"
+addopts = "-rf"
+testpaths = ["tests"]
+
 [project.optional-dependencies]
 dev = [
     'jupyter',

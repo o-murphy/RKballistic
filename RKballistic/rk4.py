@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 import numpy as np
 from numpy.typing import NDArray
+from py_ballisticcalc import InterfaceConfigDict
 from py_ballisticcalc.conditions import Shot, Wind
 from py_ballisticcalc.exceptions import RangeError
 from py_ballisticcalc.generics.engine import EngineProtocol
@@ -318,5 +319,5 @@ class RK4TrajectoryCalc(TrajectoryCalc):
 class RK4Calculator(Calculator):
     """Basic interface for the ballistics calculator"""
     _config: Optional[InterfaceConfigDict] = field(default=None)
-    _engine: Union[str, EngineProtocol] = field(default='RKBallistic')
+    _engine: Union[str, EngineProtocol] = field(default='RKballistic')
     _calc: EngineProtocol = field(init=False, repr=False, compare=False)
