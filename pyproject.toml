@@ -7,16 +7,16 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "RKballistic"
-version = "0.0.1a1"
+version = "0.0.1a2"
 
 authors = [
-    { name="dbookstaber", email="bookstaber@gmail.com"}
+    { name = "dbookstaber", email = "bookstaber@gmail.com" }
 ]
 description = "LGPL library for small arms ballistic calculations (Python 3)"
 readme = "README.md"
 requires-python = ">=3.9"
 keywords = ["py_ballisticcalc", "ballistics", "ballistic calculator", "python", "python3"]
-license = {file = "LICENSE"}
+license = { file = "LICENSE" }
 classifiers = [
     "Intended Audience :: Developers",
     "Natural Language :: English",
@@ -31,10 +31,15 @@ classifiers = [
     "Operating System :: OS Independent",
     "Programming Language :: Python :: Implementation :: CPython",
 ]
-dependencies = ["typing_extensions>= 4.12.2", "tomli; python_version<'3.11'", "py_ballisticcalc~=2.1.0b6"]
+dependencies = [
+    "typing_extensions>= 4.12.2",
+    "tomli; python_version<'3.11'",
+    "py_ballisticcalc~=2.1.1b1",
+    "numpy>=2.0.2",
+]
 
 [project.entry-points.py_ballisticcalc]
-engine = "RKballistic.rk4:RK4TrajectoryCalc"
+engine = "RKballistic:RK4TrajectoryCalc"
 
 [project.urls]
 "Homepage" = "https://github.com/dbookstaber/RKballistic"
@@ -52,8 +57,6 @@ exclude = ["tests*"]
 [project.optional-dependencies]
 dev = [
     'jupyter',
-    'pylint',
-    'mypy',
     'pytest',
     'pytest-xdist',
     'build',

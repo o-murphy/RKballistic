@@ -1,0 +1,56 @@
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+# Python cythonized package tests (uv)
+name: Pytest
+
+on:
+  pull_request:
+    branches:
+      - '*'
+  workflow_dispatch:
+
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-13, macos-14 ]
+        python-version: ["3.9", "3.10", "3.11", "3.12"]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install uv and set the python version ${{ matrix.python-version }}
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install project
+      run: |     
+        uv sync --dev
+
+    - name: Get py-ballisticcalc installed version
+      id: get_installed_version
+      run: |
+        echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata("py-ballisticcalc")["Version"])')" >> "$GITHUB_OUTPUT"
+      shell: bash # Explicitly use bash for cross-platform compatibility
+
+    - name: Clone from specific tag based on installed version
+      run: |
+        # Access the version obtained from the previous step's output
+        # The 'steps.get_installed_version.outputs.pybc_version' syntax is universal
+        PYBC_VERSION="${{ steps.get_installed_version.outputs.pybc_version }}"
+        echo "Cloning py-ballisticcalc with tag: $PYBC_VERSION"
+        git clone --branch "v$PYBC_VERSION" --single-branch https://github.com/o-murphy/py-ballisticcalc.git py-ballisticcalc
+      shell: bash # Ensure bash is used for the shell commands
+
+    - name: Run py-ballisticcalc tests with --engine CyEulerBallistic
+      run: |
+        cd py-ballisticcalc
+        pytest tests -v --engine RKBallistic
+        cd ../
+      shell: bash
+      if: runner.os != 'Windows'
