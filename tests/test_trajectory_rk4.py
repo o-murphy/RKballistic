@@ -13,7 +13,7 @@ class TestTrajectoryRK4(unittest.TestCase):
         ammo = Ammo(dm, 2600)
         weapon = Weapon(Distance(3.2, Distance.Inch))
         atmosphere = Atmo.icao()
-        calc = RK4Calculator()
+        calc = Calculator(_engine="RKballistic")
         zero_angle = calc.barrel_elevation_for_target(Shot(weapon=weapon, ammo=ammo, atmo=atmosphere),
                                      Distance(100, Distance.Yard))
 
@@ -25,7 +25,7 @@ class TestTrajectoryRK4(unittest.TestCase):
         ammo = Ammo(dm, 2750)
         weapon = Weapon(Distance(2, Distance.Inch))
         atmosphere = Atmo.icao()
-        calc = RK4Calculator()
+        calc = Calculator(_engine="RKballistic")
         zero_angle = calc.barrel_elevation_for_target(Shot(weapon=weapon, ammo=ammo, atmo=atmosphere),
                                      Distance(100, Distance.Yard))
 
@@ -77,7 +77,7 @@ class TestTrajectoryRK4(unittest.TestCase):
         shot_info = Shot(weapon=weapon, ammo=ammo, atmo=atmosphere,
                          winds=[Wind(Velocity(5, Velocity.MPH), Angular(10.5, Angular.OClock))])
 
-        calc = RK4Calculator()
+        calc = Calculator(_engine="RKballistic")
         data = calc.fire(shot_info, Distance.Yard(1000), Distance.Yard(100)).trajectory
         self.assertEqual(len(data), 11, "Trajectory Row Count")
 
@@ -107,7 +107,7 @@ class TestTrajectoryRK4(unittest.TestCase):
         weapon = Weapon(2, 12, zero_elevation=Angular.MOA(4.221))
         shot_info = Shot(weapon=weapon, ammo=ammo, winds=[Wind(Velocity(5, Velocity.MPH), Angular.Degree(-45))])
 
-        calc = RK4Calculator()
+        calc = Calculator(_engine="RKballistic")
         data = calc.fire(shot_info, Distance.Yard(1000), Distance.Yard(100)).trajectory
         self.assertEqual(len(data), 11, "Trajectory Row Count")
 
