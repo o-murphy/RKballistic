@@ -5,19 +5,19 @@ import warnings
 from dataclasses import dataclass, field
 
 import numpy as np
-from typing_extensions import Union, List, Tuple
-import time
-
-from py_ballisticcalc.logger import logger
+from numpy.typing import NDArray
+from py_ballisticcalc import InterfaceConfigDict
 from py_ballisticcalc.conditions import Shot, Wind
 from py_ballisticcalc.exceptions import RangeError
+from py_ballisticcalc.generics.engine import EngineProtocol
 from py_ballisticcalc.interface import Calculator
-from py_ballisticcalc.interface_config import create_interface_config
-from py_ballisticcalc.trajectory_calc._trajectory_calc import (TrajectoryCalc,
-                                                               calculate_energy, calculate_ogw,
-                                                               get_correction)
-from py_ballisticcalc.trajectory_data import TrajectoryData, HitResult, TrajFlag
-from py_ballisticcalc.unit import Angular, Distance, Energy, Velocity, Weight, PreferredUnits
+from py_ballisticcalc.logger import logger
+from py_ballisticcalc.trajectory_calc import (TrajectoryCalc,
+                                              calculate_energy, calculate_ogw,
+                                              get_correction)
+from py_ballisticcalc.trajectory_data import TrajectoryData, TrajFlag
+from py_ballisticcalc.unit import Angular, Distance, Energy, Velocity, Weight
+from typing_extensions import Union, List, Tuple, TypeAlias, Optional
 
 __all__ = (
     'RK4Calculator',
@@ -25,9 +25,6 @@ __all__ = (
     'cInitTrajectoryPoints',
     'cTimeDelta',
 )
-
-from typing import TypeAlias
-from numpy.typing import NDArray
 
 Vector3D: TypeAlias = NDArray[np.float64]
 trajectory_dtype = np.dtype([
@@ -320,43 +317,7 @@ class RK4TrajectoryCalc(TrajectoryCalc):
 
 @dataclass
 class RK4Calculator(Calculator):
-    _calc: RK4TrajectoryCalc = field(init=False, repr=False, compare=False)
-
-    def __post_init__(self):
-        self._calc = RK4TrajectoryCalc(create_interface_config(self._config))
-
-    # TODO: A lot of copy paste to change _calc class being used
-    def barrel_elevation_for_target(self, shot: Shot, target_distance: Union[float, Distance]) -> Angular:
-        """Calculates barrel elevation to hit target at zero_distance.
-        :param shot: Shot instance for which calculate barrel elevation is
-        :param target_distance: Look-distance to "zero," which is point we want to hit.
-            This is the distance that a rangefinder would return with no ballistic adjustment.
-            NB: Some rangefinders offer an adjusted distance based on inclinometer measurement.
-                However, without a complete ballistic model these can only approximate the effects
-                on ballistic trajectory of shooting uphill or downhill.  Therefore:
-                For maximum accuracy, use the raw sight distance and look_angle as inputs here.
-        """
-        target_distance = PreferredUnits.distance(target_distance)
-        total_elevation = self._calc.zero_angle(shot, target_distance)
-        return Angular.Radian(
-            (total_elevation >> Angular.Radian) - (shot.look_angle >> Angular.Radian)
-        )
-
-    def fire(self, shot: Shot, trajectory_range: Union[float, Distance],
-             trajectory_step: Union[float, Distance] = 0,
-             extra_data: bool = False,
-             time_step: float = 0.0) -> HitResult:
-        """Calculates trajectory
-        :param shot: shot parameters (initial position and barrel angle)
-        :param trajectory_range: Downrange distance at which to stop computing trajectory
-        :param trajectory_step: step between trajectory points to record
-        :param extra_data: True => store TrajectoryData for every calculation step;
-            False => store TrajectoryData only for each trajectory_step
-        :param time_step: (seconds) If > 0 then record TrajectoryData at least this frequently
-        """
-        trajectory_range = PreferredUnits.distance(trajectory_range)
-        if not trajectory_step:
-            trajectory_step = trajectory_range.unit_value / 10.0
-        step: Distance = PreferredUnits.distance(trajectory_step)
-        data = self._calc.trajectory(shot, trajectory_range, step, extra_data, time_step)
-        return HitResult(shot, data, extra_data)
+    """Basic interface for the ballistics calculator"""
+    _config: Optional[InterfaceConfigDict] = field(default=None)
+    _engine: Union[str, EngineProtocol] = field(default='RKballistic')
+    _calc: EngineProtocol = field(init=False, repr=False, compare=False)
