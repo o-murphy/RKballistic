@@ -36,6 +36,7 @@ dependencies = [
     "tomli; python_version<'3.11'",
     "py_ballisticcalc~=2.1.1b1",
     "numpy>=2.0.2",
+    "notebook>=7.4.3",
 ]
 
 [project.entry-points.py_ballisticcalc]

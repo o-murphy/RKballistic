@@ -104,7 +104,7 @@ class _WindSock:
 class RK4TrajectoryCalc(TrajectoryCalc):
     """Computes trajectory using Runge-Kutta 4th order method"""
 
-    def _trajectory(self, shot_info: Shot, maximum_range: float, step: float,
+    def trajectory(self, shot_info: Shot, maximum_range: float, step: float,
                     filter_flags: Union[TrajFlag, int], time_step: float = 0.0) -> List[TrajectoryData]:
         """
         Interpolate from self.trajectory_data to requested List[TrajectoryData]
@@ -319,5 +319,5 @@ class RK4TrajectoryCalc(TrajectoryCalc):
 class RK4Calculator(Calculator):
     """Basic interface for the ballistics calculator"""
     _config: Optional[InterfaceConfigDict] = field(default=None)
-    _engine: Union[str, EngineProtocol] = field(default='RKballistic')
+    _engine: Union[str, RK4TrajectoryCalc] = field(init=False, default='RKballistic')
     _calc: EngineProtocol = field(init=False, repr=False, compare=False)
