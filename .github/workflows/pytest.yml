@@ -7,16 +7,11 @@ on:
   pull_request:
     branches:
       - '*'
-  push: # Added push trigger
-    branches:
-      - '*'
   workflow_dispatch:
 
 
 jobs:
-  # This job runs the full matrix and is triggered ONLY by pull requests
-  test_full_matrix:
-    if: github.event_name == 'pull_request' # Condition for full matrix
+  test:
     strategy:
       fail-fast: false
       matrix:
@@ -39,60 +34,17 @@ jobs:
       - name: Get py-ballisticcalc installed version
         id: get_installed_version
         run: |
-          echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata(\"py-ballisticcalc\")[\"Version"])')" >> "$GITHUB_OUTPUT"
-        shell: bash
+          echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata("py-ballisticcalc")["Version"])')" >> "$GITHUB_OUTPUT"
+        shell: bash # Explicitly use bash for cross-platform compatibility
 
       - name: Clone from specific tag based on installed version
         run: |
+          # Access the version obtained from the previous step's output
+          # The 'steps.get_installed_version.outputs.pybc_version' syntax is universal
           PYBC_VERSION="${{ steps.get_installed_version.outputs.pybc_version }}"
           echo "Cloning py-ballisticcalc with tag: $PYBC_VERSION"
           git clone --branch "v$PYBC_VERSION" --single-branch https://github.com/o-murphy/py-ballisticcalc.git py-ballisticcalc
-        shell: bash
-
-      - name: Run py-ballisticcalc tests with --engine RKballistic
-        run: |
-          cd py-ballisticcalc
-          pytest ./tests -v --engine RKballistic
-          cd ../
-        shell: bash
-
-      - name: Run RKballistic specific tests
-        run: |
-          pytest ./tests -v
-        shell: bash
-
-  # This job runs the minimal matrix and is triggered ONLY by pushes
-  test_minimal_matrix:
-    if: github.event_name == 'push' # Condition for minimal matrix
-    runs-on: ubuntu-latest # Fixed OS for minimal run
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: [ "3.9" ] # Fixed Python version for minimal run
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install uv and set the python version ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install project
-        run: |
-          uv sync --dev
-
-      - name: Get py-ballisticcalc installed version
-        id: get_installed_version
-        run: |
-          echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata(\"py-ballisticcalc\")[\"Version"])')" >> "$GITHUB_OUTPUT"
-        shell: bash
-
-      - name: Clone from specific tag based on installed version
-        run: |
-          PYBC_VERSION="${{ steps.get_installed_version.outputs.pybc_version }}"
-          echo "Cloning py-ballisticcalc with tag: $PYBC_VERSION"
-          git clone --branch "v$PYBC_VERSION" --single-branch https://github.com/o-murphy/py-ballisticcalc.git py-ballisticcalc
-        shell: bash
+        shell: bash # Ensure bash is used for the shell commands
 
       - name: Run py-ballisticcalc tests with --engine RKballistic
         run: |
