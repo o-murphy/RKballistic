@@ -104,7 +104,7 @@ class _WindSock:
 class RK4TrajectoryCalc(TrajectoryCalc):
     """Computes trajectory using Runge-Kutta 4th order method"""
 
-    def trajectory(self, shot_info: Shot, maximum_range: float, step: float,
+    def _integrate(self, shot_info: Shot, maximum_range: float, step: float,
                     filter_flags: Union[TrajFlag, int], time_step: float = 0.0) -> List[TrajectoryData]:
         """
         Interpolate from self.trajectory_data to requested List[TrajectoryData]
@@ -201,6 +201,7 @@ class RK4TrajectoryCalc(TrajectoryCalc):
     # - Compute fifth order error estimate
     # - Optionally automate step size adjustment to maximize performance necessary for desired accuracy
     def integrate(self, shot_info: Shot, maximum_range: float) -> str:
+        warnings.warn("INTEGRATE")
         """Calculate trajectory for specified shot
         :return: Description (from RangeError) of what ended the trajectory
         """
