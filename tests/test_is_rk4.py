@@ -35,7 +35,7 @@ class TestIsRK4:
 
         # Step 2: Now that calc._calc holds an instance of RK4TrajectoryCalc,
         # patch the 'integrate' method directly on that specific instance.
-        with patch.object(calc._calc, 'integrate') as mock_integrate:
+        with patch.object(calc._calc, '_integrate') as mock_integrate:
             # Step 3: Call the method that should trigger 'integrate'.
             zero_angle = calc.barrel_elevation_for_target(Shot(weapon=weapon, ammo=ammo, atmo=atmosphere),
                                                           Distance(100, Distance.Yard))

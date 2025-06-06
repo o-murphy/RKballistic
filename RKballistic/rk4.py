@@ -104,7 +104,18 @@ class _WindSock:
 class RK4TrajectoryCalc(TrajectoryCalc):
     """Computes trajectory using Runge-Kutta 4th order method"""
 
-    def _integrate(self, shot_info: Shot, maximum_range: float, step: float,
+    # TODO: 
+    #  1. `zero_angle()` not implemented for using with `RK4._integrate`, this is guarantee expected input/return,
+    #  2. For now `zero_angle` is calling `TC._integrate` under it, that don't mach `RK4._integrate` declaration
+    #       so `zero_angle` should be explicitly override,
+    #  3. zero_angle() declaration should match EngineProtocol.zero_angle()
+    def zero_angle(self, shot_info: Shot, distance: Distance) -> Angular:
+        raise NotImplementedError("RK4TrajectoryCalc does not support zero angle")
+
+    # TODO: 
+    #  1. trajectory() declaration should match EngineProtocol.trajectory(), this is guarantee expected input/return,
+    #  2. If you wanna use `interpolate_trajectory()`, the `trajectory()` should be explicitly override
+    def trajectory(self, shot_info: Shot, maximum_range: float, step: float,
                     filter_flags: Union[TrajFlag, int], time_step: float = 0.0) -> List[TrajectoryData]:
         """
         Interpolate from self.trajectory_data to requested List[TrajectoryData]
@@ -112,10 +123,10 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         :param step: Frequency (in feet down range) to record TrajectoryData
         :param filter_flags: Whether to record TrajectoryData for zero or Mach crossings
         """
-        integrate_result = self.integrate(shot_info, maximum_range)
+        integrate_result = self._integrate(shot_info, maximum_range)
         # print(integrate_result)  # Why the integration stopped where it did.  (See RangeErrors)
         # TODO: Handle TrajFlags for special rows.
-        # Perhaps better to do linear search instead of current interpolate_trajectory_at_x
+        # Perhaps better to do linear search instead of current _interpolate_trajectory_at_x
         #   binary search if we're looking for anything other than TrajFlag.RANGE or .NONE
         # TODO: When returning data for charting we don't really need to interpolate
         ranges: List[TrajectoryData] = []
@@ -125,14 +136,15 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         for x in np.arange(start, maximum_range + step, step):
             itp += 1
 
-            interp_point = self.interpolate_trajectory_at_x(x)
+            interp_point = self._interpolate_trajectory_at_x(x)
             if interp_point:
                 ranges.append(interp_point)
 
         logger.debug(f"itp: {itp}")
         return ranges
 
-    def interpolate_trajectory_at_x(self, target_x) -> TrajectoryData:
+    # TODO: RK4 specific, interpolation function, better mark it private or protected
+    def _interpolate_trajectory_at_x(self, target_x) -> TrajectoryData:
         """Interpolates the trajectory at a given x-coordinate.
         This assumes that position.x is monotonically increasing.
         TODO: Check for and handle violations of this assumption.
@@ -197,11 +209,11 @@ class RK4TrajectoryCalc(TrajectoryCalc):
             flag=TrajFlag.RANGE
         )
 
-    # TODO:
+    # TODO: 1. the `integrate()` method are not specified in EngineProtocol, so you free about it's declaration
+    #  but for using it you have implement it in `trajectory()` and `zero_angle()`
     # - Compute fifth order error estimate
     # - Optionally automate step size adjustment to maximize performance necessary for desired accuracy
-    def integrate(self, shot_info: Shot, maximum_range: float) -> str:
-        warnings.warn("INTEGRATE")
+    def _integrate(self, shot_info: Shot, maximum_range: float) -> str:
         """Calculate trajectory for specified shot
         :return: Description (from RangeError) of what ended the trajectory
         """
