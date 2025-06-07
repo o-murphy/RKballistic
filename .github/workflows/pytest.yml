@@ -12,6 +12,7 @@ on:
 
 jobs:
   test:
+    name: Project Tests (${{ matrix.os }} / Python ${{ matrix.python-version }})
     strategy:
       fail-fast: false
       matrix:
@@ -27,33 +28,60 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install project
+      - name: Install project dependencies
         run: |
           uv sync --dev
 
-      - name: Get py-ballisticcalc installed version
-        id: get_installed_version
+      - name: Run main project tests
         run: |
-          echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata("py-ballisticcalc")["Version"])')" >> "$GITHUB_OUTPUT"
-        shell: bash # Explicitly use bash for cross-platform compatibility
+          pytest ./tests -v
+        shell: bash
 
-      - name: Clone from specific tag based on installed version
+  test_pyballisticcalc:
+    name: py-ballisticcalc Tests (${{ matrix.os }} / Python ${{ matrix.python-version }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest, macos-13, macos-14 ]
+        python-version: [ "3.9", "3.10", "3.11", "3.12" ]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set the python version ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get py-ballisticcalc installed version from main project (if applicable)
+        # This step assumes 'py-ballisticcalc' is a dependency of the main project
+        # and its version is determined by the main project's lock file.
+        # If py-ballisticcalc is not a direct dependency, you might need a different way
+        # to determine the version to clone, or remove this step and hardcode a version.
+        run: |
+          # First, install main project's dependencies to ensure py-ballisticcalc is available for metadata check
+          uv sync --dev
+          echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata("py-ballisticcalc")["Version"])')" >> "$GITHUB_OUTPUT"
+        id: get_installed_version
+        shell: bash
+
+      - name: Clone py-ballisticcalc from specific tag based on installed version
         run: |
           # Access the version obtained from the previous step's output
-          # The 'steps.get_installed_version.outputs.pybc_version' syntax is universal
           PYBC_VERSION="${{ steps.get_installed_version.outputs.pybc_version }}"
-          echo "Cloning py-ballisticcalc with tag: $PYBC_VERSION"
-          git clone --branch "v$PYBC_VERSION" --single-branch https://github.com/o-murphy/py-ballisticcalc.git py-ballisticcalc
-        shell: bash # Ensure bash is used for the shell commands
+          echo "Cloning py-ballisticcalc with tag: v$PYBC_VERSION"
+          git clone --branch "v$PYBC_VERSION" --single-branch https://github.com/o-murphy/py-ballisticcalc.git py-ballisticcalc_repo
+        shell: bash
+
+      - name: Install py-ballisticcalc dependencies
+        run: |
+          cd py-ballisticcalc_repo
+          uv sync --dev # Assuming py-ballisticcalc also uses uv and has a dev dependency group
+        shell: bash
 
       - name: Run py-ballisticcalc tests with --engine RKballistic
         run: |
-          cd py-ballisticcalc
+          cd py-ballisticcalc_repo
           pytest ./tests -v --engine RKballistic
-          cd ../
-        shell: bash
-
-      - name: Run RKballistic specific tests
-        run: |
-          pytest ./tests -v
         shell: bash
