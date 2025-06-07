@@ -5,7 +5,7 @@ __copyright__ = (
 
 __credits__ = ["dbookstaber"]
 
-from .rk4 import RK4Calculator, RK4TrajectoryCalc
+from .rk4 import *
 
 __all__ = (
     'RK4Calculator',

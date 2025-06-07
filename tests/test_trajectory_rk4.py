@@ -3,7 +3,11 @@
 import unittest
 from math import fabs
 from py_ballisticcalc import *
-from RKballistic import RK4Calculator
+import logging
+from py_ballisticcalc.logger import logger
+
+
+logger.setLevel(logging.DEBUG)
 
 
 class TestTrajectoryRK4(unittest.TestCase):
