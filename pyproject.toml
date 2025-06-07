@@ -34,7 +34,7 @@ classifiers = [
 dependencies = [
     "typing_extensions>= 4.12.2",
     "tomli; python_version<'3.11'",
-    "py_ballisticcalc~=2.1.1b1",
+    "py_ballisticcalc~=2.1.1b2",
     "numpy>=2.0.2",
     "notebook>=7.4.3",
 ]

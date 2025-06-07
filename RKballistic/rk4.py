@@ -9,7 +9,7 @@ from numpy.typing import NDArray
 from py_ballisticcalc import InterfaceConfigDict
 from py_ballisticcalc.conditions import Shot, Wind
 from py_ballisticcalc.exceptions import RangeError
-from py_ballisticcalc.generics.engine import EngineProtocol
+from py_ballisticcalc.generics.engine import EngineProtocol, ConfigT
 from py_ballisticcalc.interface import Calculator
 from py_ballisticcalc.logger import logger
 from py_ballisticcalc.trajectory_calc import (TrajectoryCalc,
@@ -17,7 +17,7 @@ from py_ballisticcalc.trajectory_calc import (TrajectoryCalc,
                                               get_correction)
 from py_ballisticcalc.trajectory_data import TrajectoryData, TrajFlag
 from py_ballisticcalc.unit import Angular, Distance, Energy, Velocity, Weight
-from typing_extensions import Union, List, Tuple, TypeAlias, Optional
+from typing_extensions import Union, List, Tuple, TypeAlias, Optional, override
 
 __all__ = (
     'RK4Calculator',
@@ -57,7 +57,11 @@ def wind_to_vector(wind: Wind) -> Vector3D:
     return np.array([range_component, 0.0, cross_component], dtype=np.float64)
 
 
-class _WindSock:
+class _RKWindSock:
+    """
+    Custom realisation of TC._WindSock with numpy vectors support
+    """
+
     winds: tuple['Wind', ...]
     current: int
     wind_current: int
@@ -104,26 +108,38 @@ class _WindSock:
 class RK4TrajectoryCalc(TrajectoryCalc):
     """Computes trajectory using Runge-Kutta 4th order method"""
 
-    # TODO: 
-    #  1. `zero_angle()` not implemented for using with `RK4._integrate`, this is guarantee expected input/return,
-    #  2. For now `zero_angle` is calling `TC._integrate` under it, that don't mach `RK4._integrate` declaration
-    #       so `zero_angle` should be explicitly override,
-    #  3. zero_angle() declaration should match EngineProtocol.zero_angle()
-    def zero_angle(self, shot_info: Shot, distance: Distance) -> Angular:
-        raise NotImplementedError("RK4TrajectoryCalc does not support zero angle")
+    @override
+    def __init__(self, _config: ConfigT):
+        super().__init__(_config)
+        self.__trajectory_data = np.zeros(cInitTrajectoryPoints, dtype=trajectory_dtype)
 
-    # TODO: 
-    #  1. trajectory() declaration should match EngineProtocol.trajectory(), this is guarantee expected input/return,
-    #  2. If you wanna use `interpolate_trajectory()`, the `trajectory()` should be explicitly override
-    def trajectory(self, shot_info: Shot, maximum_range: float, step: float,
-                    filter_flags: Union[TrajFlag, int], time_step: float = 0.0) -> List[TrajectoryData]:
+    # NOTE: the overriding of methods below can be omitted if you sure it matches expected behaviour
+
+    # @property
+    # @override
+    # def table_data(self) -> List[DragDataPoint]:
+    #     return super().table_data
+    #
+    # @override
+    # def zero_angle(self, shot_info: Shot, distance: Distance) -> Angular:
+    #     return super().zero_angle(shot_info, distance)
+    #
+    # @override
+    # def trajectory(self, shot_info: Shot, max_range: Distance, dist_step: Distance,
+    #                extra_data: bool = False, time_step: float = 0.0) -> List[TrajectoryData]:
+    #     return super().trajectory(shot_info, max_range, dist_step, extra_data, time_step)
+
+    # NOTE: Override TC._integrate() method that uses
+    @override
+    def _integrate(self, shot_info: Shot, maximum_range: float, step: float,
+                   filter_flags: Union[TrajFlag, int], time_step: float = 0.0) -> List[TrajectoryData]:
         """
-        Interpolate from self.trajectory_data to requested List[TrajectoryData]
+        Interpolate from self.__trajectory_data to requested List[TrajectoryData]
         :param maximum_range: Feet down range to stop calculation
         :param step: Frequency (in feet down range) to record TrajectoryData
         :param filter_flags: Whether to record TrajectoryData for zero or Mach crossings
         """
-        integrate_result = self._integrate(shot_info, maximum_range)
+        integrate_result = self._rk4_integration(shot_info, maximum_range)
         # print(integrate_result)  # Why the integration stopped where it did.  (See RangeErrors)
         # TODO: Handle TrajFlags for special rows.
         # Perhaps better to do linear search instead of current _interpolate_trajectory_at_x
@@ -143,7 +159,6 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         logger.debug(f"itp: {itp}")
         return ranges
 
-    # TODO: RK4 specific, interpolation function, better mark it private or protected
     def _interpolate_trajectory_at_x(self, target_x) -> TrajectoryData:
         """Interpolates the trajectory at a given x-coordinate.
         This assumes that position.x is monotonically increasing.
@@ -155,7 +170,8 @@ class RK4TrajectoryCalc(TrajectoryCalc):
             Interpolated TrajectoryData
         """
 
-        x_values = self.trajectory_data['position'][:, 0]  # Extract all x-values
+        x_values = self.__trajectory_data['position'][:, 0]  # Extract all x-values
+
         if target_x < x_values[0] or target_x > x_values[-1]:
             return None  # or raise an exception if you prefer
         idx = np.searchsorted(x_values, target_x)
@@ -165,8 +181,8 @@ class RK4TrajectoryCalc(TrajectoryCalc):
             idx_lower = idx - 1
         idx_upper = idx
         # Extract the bracketing trajectory points:
-        lower_point = self.trajectory_data[idx_lower]
-        upper_point = self.trajectory_data[idx_upper]
+        lower_point = self.__trajectory_data[idx_lower]
+        upper_point = self.__trajectory_data[idx_upper]
         # Scalar interpolation
         time = np.interp(target_x, [lower_point['position'][0], upper_point['position'][0]],
                          [lower_point['time'], upper_point['time']])
@@ -209,11 +225,9 @@ class RK4TrajectoryCalc(TrajectoryCalc):
             flag=TrajFlag.RANGE
         )
 
-    # TODO: 1. the `integrate()` method are not specified in EngineProtocol, so you free about it's declaration
-    #  but for using it you have implement it in `trajectory()` and `zero_angle()`
     # - Compute fifth order error estimate
     # - Optionally automate step size adjustment to maximize performance necessary for desired accuracy
-    def _integrate(self, shot_info: Shot, maximum_range: float) -> str:
+    def _rk4_integration(self, shot_info: Shot, maximum_range: float) -> str:
         """Calculate trajectory for specified shot
         :return: Description (from RangeError) of what ended the trajectory
         """
@@ -237,7 +251,7 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         density_factor: float = .0
 
         # region Initialize wind-related variables to first wind reading (if any)
-        wind_sock = _WindSock(shot_info.winds)
+        wind_sock = _RKWindSock(shot_info.winds)
         wind_vector: Vector3D = wind_sock.current_vector()
         # endregion
 
@@ -317,7 +331,7 @@ class RK4TrajectoryCalc(TrajectoryCalc):
         if time > 0:
             add_to_trajectory(time, range_vector, velocity_vector, mach, km, relative_speed)
 
-        self.trajectory_data = trajectory[:i]
+        self.__trajectory_data = trajectory[:i]
 
         finish_reason = "Done"
         if velocity < _cMinimumVelocity:
