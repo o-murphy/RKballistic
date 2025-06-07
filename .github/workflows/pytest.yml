@@ -34,7 +34,7 @@ jobs:
 
       - name: Run main project tests
         run: |
-          pytest ./tests -v
+          python -m pytest ./tests -v
         shell: bash
 
   test_pyballisticcalc:
@@ -83,5 +83,5 @@ jobs:
       - name: Run py-ballisticcalc tests with --engine RKballistic
         run: |
           cd py-ballisticcalc_repo
-          pytest ./tests -v --engine RKballistic
+          python -m pytest ./tests -v --engine RKballistic
         shell: bash
