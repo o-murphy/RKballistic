@@ -64,12 +64,11 @@ jobs:
           # First, install main project's dependencies to ensure py-ballisticcalc is available for metadata check
           uv sync --dev
           uv pip install -e .[dev]
-          cd py-ballisticcalc
           echo "pybc_version=$(python -c 'from importlib.metadata import metadata; print(metadata("py-ballisticcalc")["Version"])')" >> "$GITHUB_OUTPUT"
         id: get_installed_version
         shell: bash
 
-      - name: Clone py-ballisticcalc from specific tag based on installed version
+      - name: Clone py-ballisticcalc from specific tag based on installed version to use it's tests definition
         run: |
           # Access the version obtained from the previous step's output
           PYBC_VERSION="${{ steps.get_installed_version.outputs.pybc_version }}"
