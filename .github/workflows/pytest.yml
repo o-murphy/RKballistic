@@ -32,6 +32,10 @@ jobs:
         run: |
           uv sync --dev
 
+      - name: Install pytest explicitly
+        run: |
+          uv pip install pytest
+
       - name: Run main project tests
         run: |
           python -m pytest ./tests -v
@@ -78,6 +82,11 @@ jobs:
         run: |
           cd py-ballisticcalc_repo
           uv sync --dev # Assuming py-ballisticcalc also uses uv and has a dev dependency group
+
+      - name: Install pytest explicitly for py-ballisticcalc
+        run: |
+          cd py-ballisticcalc_repo
+          uv pip install pytest
         shell: bash
 
       - name: Run py-ballisticcalc tests with --engine RKballistic
